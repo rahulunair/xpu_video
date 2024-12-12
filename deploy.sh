@@ -34,9 +34,7 @@ for name, config in MODEL_CONFIGS.items():
     echo
     echo "Examples:"
     echo "  ./deploy.sh                          # Deploy with default model"
-    echo "  ./deploy.sh cogvideox                # Deploy with CogVideoX-2b model"
-    echo "  ./deploy.sh cogvideox --skip-base    # Change model without restarting base services"
-}
+    echo "  ./deploy.sh cogvideox                # Deploy with CogVideoX-2b mode    echo "  ./deploy.sh cogvideox                # Deploy with CogVideoX-2b mode    echo "  ./deploy.sh cogvideox --skip-base    # Change model without restarti    echo "  ./deploy.sh cogvideox --skip-base    # Change model without restarti}
 
 # ------------------------------------------------------------------------------
 # Parse Command-Line Arguments
@@ -64,8 +62,7 @@ done
 
 # Validate model name against available configs
 if [ -n "$MODEL" ]; then
-    if ! python3 -c "from config.model_configs import MODEL_CONFIGS; exit(0 if '$MODEL' in MODEL_CONFIGS else 1)"; then
-        echo "Error: Invalid model name '$MODEL'"
+    if ! python3 -c "from config.model_configs import MODEL_CONFIGS; exit(0 if '    if ! python3 -c "from config.model_configs import MODEL_CONFIGS; exit(0 if '        echo "Error: Invalid model name '$MODEL'"
         echo "Run './deploy.sh --help' to see available models"
         exit 1
     fi
@@ -97,8 +94,7 @@ generate_secure_token() {
     local adj2_idx=$(($(openssl rand -hex 1 | od -An -i) % ${#adjectives[@]}))
     local noun_idx=$(($(openssl rand -hex 1 | od -An -i) % ${#nouns[@]}))
     local random_hex=$(openssl rand -hex 12)
-    echo "${adjectives[$adj1_idx]}-${adjectives[$adj2_idx]}-${nouns[$noun_idx]}-${random_hex}"
-}
+    echo "${adjectives[$adj1_idx]}-${adjectives[$adj2_idx]}-${nouns[$noun_idx]}-    echo "${adjectives[$adj1_idx]}-${adjectives[$adj2_idx]}-${nouns[$noun_idx]}-}
 
 # ------------------------------------------------------------------------------
 # Check Docker Status
@@ -168,8 +164,7 @@ echo "You can monitor the status with: ./monitor_video.sh"
 TIMEOUT=300  # Increased timeout for model loading
 START_TIME=$(date +%s)
 while true; do
-    if curl -s -H "Authorization: Bearer $VALID_TOKEN" http://localhost:9000/imagine/health > /dev/null; then
-        break
+    if curl -s -H "Authorization: Bearer $VALID_TOKEN" http://localhost:9000/ima    if curl -s -H "Authorization: Bearer $VALID_TOKEN" http://localhost:9000/ima        break
     fi
 
     CURRENT_TIME=$(date +%s)
@@ -189,8 +184,7 @@ done
 # Display Available Models and Example Usage
 # ------------------------------------------------------------------------------
 echo -e "\n=== Model Info ==="
-response=$(curl -s -H "Authorization: Bearer $VALID_TOKEN" http://localhost:9000/imagine/info)
-if echo "$response" | python3 -m json.tool > /dev/null 2>&1; then
+response=$(curl -s -H "Authorization: Bearer $VALID_TOKEN" http://localhost:9000response=$(curl -s -H "Authorization: Bearer $VALID_TOKEN" http://localhost:9000if echo "$response" | python3 -m json.tool > /dev/null 2>&1; then
     echo "$response" | python3 -m json.tool
 else
     echo "Error getting model info. Raw response:"
@@ -200,16 +194,13 @@ fi
 
 echo -e "\n=== Quick API Examples ==="
 echo "# Health Check"
-echo "curl http://localhost:9000/imagine/health -H \"Authorization: Bearer \$VALID_TOKEN\""
-echo
+echo "curl http://localhost:9000/imagine/health -H \"Authorization: Bearer \$VALecho "curl http://localhost:9000/imagine/health -H \"Authorization: Bearer \$VALecho
 echo "# Get Model Info"
-echo "curl http://localhost:9000/imagine/info -H \"Authorization: Bearer \$VALID_TOKEN\""
-echo
+echo "curl http://localhost:9000/imagine/info -H \"Authorization: Bearer \$VALIDecho "curl http://localhost:9000/imagine/info -H \"Authorization: Bearer \$VALIDecho
 echo "# Generate Video"
 echo "curl -X POST http://localhost:9000/imagine/imagine \\"
 echo "  -H \"Authorization: Bearer \$VALID_TOKEN\" \\"
 echo "  -H \"Content-Type: application/json\" \\"
-echo "  -d '{\"prompt\":\"a magical cosmic unicorn flying through space\",\"num_frames\":16,\"fps\":8}'"
-echo
+echo "  -d '{\"prompt\":\"a magical cosmic unicorn flying through space\",\"num_echo "  -d '{\"prompt\":\"a magical cosmic unicorn flying through space\",\"num_echo
 echo -e "\n=== Monitor Service ==="
 echo "./monitor_video.sh"
