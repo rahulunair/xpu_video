@@ -9,7 +9,9 @@ from typing import Any, Dict, Optional, Union
 
 import ray.serve as serve
 import torch
-from fastapi import FastAPI, HTTPException, Response, Body
+import intel_extension_for_pytorch as ipex
+
+from fastapi import FastAPI, HTTPException, Response, Body, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
@@ -21,8 +23,16 @@ from utils.validators import VideoGenerationValidator
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Define the FastAPI app and enable CORS
-app = FastAPI()
+# Define the FastAPI app
+app = FastAPI(
+    title="Video Generation API",
+    description="AI-powered video generation service",
+    version="0.1.0",
+    docs_url="/imagine/docs",
+    redoc_url="/imagine/redoc",
+)
+
+# Enable CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -30,6 +40,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Create router with /imagine prefix
+router = APIRouter(prefix="/imagine")
 
 
 @dataclass
@@ -59,6 +72,8 @@ class VideoGenerationServer:
         logger.info(f"Using model: {self.model_name}")
         self.model_status = ModelStatus()
         self._load_model()
+        # Include the router
+        app.include_router(router)
 
     def _load_model(self) -> None:
         """Load the configured model."""
@@ -75,7 +90,7 @@ class VideoGenerationServer:
             self.model_status.is_loaded = False
             self.model_status.error = error_msg
 
-    @app.get("/info")
+    @router.get("/info")
     def get_info(self) -> Dict[str, Any]:
         """Get information about the model and system status."""
         return {
@@ -87,7 +102,7 @@ class VideoGenerationServer:
             "replica_id": serve.get_replica_context().replica_tag,
         }
 
-    @app.get("/health")
+    @router.get("/health")
     def health_check(self) -> Dict[str, Any]:
         """Health check endpoint."""
         return {
@@ -95,7 +110,7 @@ class VideoGenerationServer:
             "replica": serve.get_replica_context().replica_tag,
         }
 
-    @app.post("/generate")
+    @router.post("/generate")
     async def generate(
         self,
         prompt: str = Body(..., description="The prompt for video generation"),
@@ -144,11 +159,11 @@ class VideoGenerationServer:
                 filename="generated_video.mp4",
             )
         except Exception as e:
-            logger.error(f"Error generating video: {e}")
+            logger.error(f"Error generating video, gc collecting and emptying xpu cache: {e}")
             self.model_status.is_loaded = False
             self.model_status.error = str(e)
             gc.collect()
-            torch.cuda.empty_cache()
+            torch.xpu.empty_cache()
             raise HTTPException(status_code=500, detail=f"Error generating video: {str(e)}")
         finally:
             if "video_path" in locals():
