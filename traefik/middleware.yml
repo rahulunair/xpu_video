@@ -1,0 +1,45 @@
+http:
+  middlewares:
+    global-limit:
+      rateLimit:
+        average: 30
+        burst: 60
+        period: 1s
+
+    ip-limit:
+      rateLimit:
+        average: 15
+        burst: 30
+        period: 1s
+        sourceCriterion:
+          ipStrategy:
+            depth: 1
+
+    security-headers:
+      headers:
+        frameDeny: true
+        contentTypeNosniff: true
+        browserXssFilter: true
+        stsSeconds: 31536005
+        stsIncludeSubdomains: true
+        customResponseHeaders:
+          X-Server: "SD-Proxy"
+
+    cors-headers:
+      headers:
+        accessControlAllowMethods: "GET,POST,OPTIONS"
+        accessControlAllowHeaders: "*"
+        accessControlAllowOriginList:
+          - "*"
+        accessControlMaxAge: 3600
+        addVaryHeader: true
+
+    chain-auth:
+      chain:
+        middlewares:
+          - auth-forward@file
+          - strip-imagine@file
+          - global-limit
+          - ip-limit
+          - security-headers
+          - cors-headers

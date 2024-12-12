@@ -1,0 +1,30 @@
+networks:
+  video_net:
+    external: true
+    name: video_network
+
+services:
+  video-service:
+    shm_size: '20g'
+    tmpfs:
+      - /dev/shm
+    build:
+      context: .
+    container_name: video_service
+    expose:
+      - "9003"
+    devices:
+      - /dev/dri:/dev/dri
+    environment:
+      - VALID_TOKEN=${VALID_TOKEN:-test-token}
+      - DEFAULT_MODEL=${DEFAULT_MODEL:-cogvideox}
+    volumes:
+      - ${HOME}/.cache/huggingface:/root/.cache/huggingface
+    networks:
+      - video_net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.video.rule=PathPrefix(`/video`)"
+      - "traefik.http.routers.video.middlewares=chain-auth@file"
+      - "traefik.http.services.video.loadbalancer.server.port=9003"
+    restart: unless-stopped

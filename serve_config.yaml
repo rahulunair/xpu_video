@@ -1,0 +1,36 @@
+proxy_location: EveryNode
+
+http_options:
+  host: 0.0.0.0
+  port: 9003
+
+logging_config:
+  encoding: TEXT
+  log_level: INFO
+  logs_dir: null
+  enable_access_log: true
+
+applications:
+- name: video-generation
+  route_prefix: /
+  import_path: serve:entrypoint
+  runtime_env:
+    pip:
+      - torch
+      - transformers
+      - accelerate
+      - diffusers
+      - Pillow
+      - sentencepiece
+      - psutil
+      - imageio
+      - imageio-ffmpeg
+      - numpy
+      - einops
+  deployments:
+  - name: VideoGenerationServer
+    num_replicas: 1
+    max_ongoing_requests: 50
+    max_queued_requests: 100
+    ray_actor_options:
+      num_cpus: 24.0
