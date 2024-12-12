@@ -23,7 +23,7 @@ http:
         stsSeconds: 31536005
         stsIncludeSubdomains: true
         customResponseHeaders:
-          X-Server: "Video-Proxy"
+          X-Server: "Service-Proxy"
 
     cors-headers:
       headers:
