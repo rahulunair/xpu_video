@@ -2,11 +2,11 @@ services:
   auth:
     build:
       context: ./auth
-    container_name: service_auth
+    container_name: service-auth
     environment:
       - VALID_TOKEN=${VALID_TOKEN:-test-token}
     networks:
-      - service_network
+      - service-network
     expose:
       - "9001"
     healthcheck:
@@ -29,10 +29,11 @@ services:
       options:
         max-size: "10m"
         max-file: "5"
-
+  # Note: For production environments, consider securing the Traefik dashboard using authentication (basicAuth, digestAuth, forwardAuth) or IP allowlisting.
+  # See: https://doc.traefik.io/traefik/operations/dashboard/#secure-mod
   proxy:
     image: traefik:v3.2.1
-    container_name: service_proxy
+    container_name: service-proxy
     command:
       - "--api.insecure=true"
       - "--providers.docker=true"
@@ -50,7 +51,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./traefik:/etc/traefik/dynamic:ro
     networks:
-      - service_network
+      - service-network
     depends_on:
       auth:
         condition: service_healthy
@@ -68,8 +69,8 @@ services:
         max-file: "5"
 
 networks:
-  service_network:
-    name: service_network
+  service-network:
+    name: service-network
     driver: bridge
     ipam:
       driver: default
