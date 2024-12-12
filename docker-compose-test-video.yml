@@ -1,0 +1,23 @@
+services:
+  video-service:
+    shm_size: '20g'
+    tmpfs:
+      - /dev/shm
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9002/imagine/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    build:
+      context: .
+    container_name: video-service-test
+    ports:  # Changed from 'expose' to 'ports' to access directly
+      - "9002:9002"
+    devices:
+      - /dev/dri:/dev/dri
+    environment:
+      - VALID_TOKEN=test-token
+      - DEFAULT_MODEL=${DEFAULT_MODEL:-cogvideox}
+    volumes:
+      - ${HOME}/.cache/huggingface:/root/.cache/huggingface
+    restart: unless-stopped
