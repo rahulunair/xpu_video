@@ -32,4 +32,5 @@ services:
       - "traefik.http.routers.video.rule=PathPrefix(`/imagine`)"
       - "traefik.http.routers.video.middlewares=chain-auth@file"
       - "traefik.http.services.video.loadbalancer.server.port=9002"
+      - "traefik.http.routers.video.middlewares=strip-imagine@file,chain-auth@fi      - "traefik.http.routers.video.middlewares=strip-imagine@file,chain-auth@fi
     restart: unless-stopped
