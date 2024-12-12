@@ -1,4 +1,4 @@
-VIDEO_MODEL_CONFIGS = {
+MODEL_CONFIGS = {
     "cogvideox": {
         "default_steps": 50,
         "default_guidance": 6.0,

@@ -8,11 +8,16 @@ services:
     shm_size: '20g'
     tmpfs:
       - /dev/shm
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9002/imagine/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     build:
       context: .
     container_name: video_service
     expose:
-      - "9003"
+      - "9002"
     devices:
       - /dev/dri:/dev/dri
     environment:
@@ -24,7 +29,7 @@ services:
       - video_net
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.video.rule=PathPrefix(`/video`)"
+      - "traefik.http.routers.video.rule=PathPrefix(`/imagine`)"
       - "traefik.http.routers.video.middlewares=chain-auth@file"
-      - "traefik.http.services.video.loadbalancer.server.port=9003"
+      - "traefik.http.services.video.loadbalancer.server.port=9002"
     restart: unless-stopped
