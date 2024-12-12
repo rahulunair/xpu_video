@@ -9,5 +9,5 @@ http:
 
     strip-imagine:
       stripPrefix:
-        prefixes: 
+        prefixes:
           - "/imagine"
