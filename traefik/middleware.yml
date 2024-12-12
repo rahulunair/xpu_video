@@ -23,7 +23,7 @@ http:
         stsSeconds: 31536005
         stsIncludeSubdomains: true
         customResponseHeaders:
-          X-Server: "Service-Proxy"
+          X-Server: "service-proxy"
 
     cors-headers:
       headers:
@@ -38,6 +38,7 @@ http:
       chain:
         middlewares:
           - auth-forward@file
+          - strip-imagine@file
           - global-limit
           - ip-limit
           - security-headers

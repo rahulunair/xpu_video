@@ -15,9 +15,8 @@ check_xpu_smi() {
 counter=0
 while true; do
     echo -e "${GREEN}\n=== Service Status $(date) ===${NC}\n"
-
     echo -e "${GREEN}=== Services Health ===${NC}"
-    for service in "video_proxy:Traefik" "video_auth:Auth" "video_service:Video Service"; do
+    for service in "service-proxy:Traefik" "service-auth:Auth" "video-service:Video Service"; do
         name=${service#*:}
         container=${service%:*}
         if docker ps --format '{{.Names}}' | grep -q "^${container}$"; then
@@ -28,7 +27,7 @@ while true; do
     done
 
     echo -e "\n${GREEN}=== API Health ===${NC}"
-    if curl -s -H "Authorization: Bearer $VALID_TOKEN" http://localhost:9000/video/health > /dev/null; then
+    if curl -s -H "Authorization: Bearer $VALID_TOKEN" http://localhost:9000/imagine/health > /dev/null; then
         echo -e "${GREEN}✓ API responding${NC}"
     else
         echo -e "${RED}✗ API not responding${NC}"
@@ -37,18 +36,17 @@ while true; do
     if [ $counter -eq 0 ]; then
         echo -e "\n${GREEN}=== Resource Usage ===${NC}"
         docker stats --no-stream --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.NetIO}}"
-
         if check_xpu_smi; then
             echo -e "\n${GREEN}=== XPU Status ===${NC}"
             xpu-smi dump -m0,18,2 -n1 2> /dev/null || echo -e "${YELLOW}Unable to get XPU metrics${NC}"
         fi
 
         echo -e "\n${GREEN}=== Ray Status ===${NC}"
-        docker exec video_service ray status 2> /dev/null || echo -e "${RED}Ray status check failed${NC}"
-
+        docker exec video-service ray status 2> /dev/null || echo -e "${RED}Ray status check failed${NC}"
         echo -e "\n${GREEN}=== Serve Status ===${NC}"
-        docker exec video_service serve status 2> /dev/null || echo -e "${RED}Serve status check failed${NC}"
+        docker exec video-service serve status 2> /dev/null || echo -e "${RED}Serve status check failed${NC}"
     fi
     counter=$((($counter + 1) % 6))
     sleep 10
 done
+

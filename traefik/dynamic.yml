@@ -6,3 +6,8 @@ http:
         authResponseHeaders:
           - "X-Auth-User"
           - "X-Auth-Status"
+
+    strip-imagine:
+      stripPrefix:
+        prefixes: 
+          - "/imagine"

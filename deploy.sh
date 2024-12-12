@@ -178,7 +178,7 @@ echo "🔍 Monitor Video service: ./monitor_video.sh"
 echo -e "\n⏳ Waiting for Video service to be ready..."
 echo "You can monitor the status with: ./monitor_video.sh"
 
-TIMEOUT=300  # Increased timeout for model loading
+TIMEOUT=30 
 START_TIME=$(date +%s)
 while true; do
     if curl -s -H "Authorization: Bearer $VALID_TOKEN" http://localhost:9000/imagine/health | grep -q "ok"; then

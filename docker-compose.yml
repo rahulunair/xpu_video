@@ -1,5 +1,5 @@
 networks:
-  video_net:
+  service-network:
     external: true
     name: service-network
 
