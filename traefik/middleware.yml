@@ -38,7 +38,6 @@ http:
       chain:
         middlewares:
           - auth-forward@file
-          - strip-imagine@file
           - global-limit
           - ip-limit
           - security-headers
