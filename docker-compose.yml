@@ -1,7 +1,7 @@
 networks:
   video_net:
     external: true
-    name: video_network
+    name: service-network
 
 services:
   video-service:
@@ -15,7 +15,7 @@ services:
       retries: 3
     build:
       context: .
-    container_name: video_service
+    container_name: video-service
     expose:
       - "9002"
     devices:
@@ -26,11 +26,10 @@ services:
     volumes:
       - ${HOME}/.cache/huggingface:/root/.cache/huggingface
     networks:
-      - video_net
+      - service-network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.video.rule=PathPrefix(`/imagine`)"
-      - "traefik.http.routers.video.middlewares=chain-auth@file"
-      - "traefik.http.services.video.loadbalancer.server.port=9002"
-      - "traefik.http.routers.video.middlewares=strip-imagine@file,chain-auth@fi      - "traefik.http.routers.video.middlewares=strip-imagine@file,chain-auth@fi
+      - "traefik.http.routers.video-service.rule=PathPrefix(`/imagine`)"
+      - "traefik.http.routers.video-service.middlewares=chain-auth@file"
+      - "traefik.http.services.video-service.loadbalancer.server.port=9002"
     restart: unless-stopped
