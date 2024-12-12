@@ -1,34 +1,14 @@
 from typing import Any, Dict, Optional, Union
 from fastapi import HTTPException
 
-# You can create this in a separate config file
-VIDEO_MODEL_CONFIGS = {
-    "cogvideox": {
-        "min_frames": 8,
-        "max_frames": 100,
-        "default_frames": 49,
-        "default_guidance": 6.0,
-        "default_steps": 50,
-        "fps_range": (1, 60),
-        "default_fps": 49
-    },
-    "cogvideo5b": {
-        "min_frames": 8,
-        "max_frames": 100,
-        "default_frames": 49,
-        "default_guidance": 6.0,
-        "default_steps": 50,
-        "fps_range": (1, 60),
-        "default_fps": 49
-    }
-}
+from config.model_configs import MODEL_CONFIGS as VIDEO_MODEL_CONFIGS
 
 class VideoGenerationValidator:
     """Validation utilities for video generation parameters."""
 
-    MAX_PROMPT_LENGTH: int = 200
-    MAX_GUIDANCE_SCALE: float = 20.0
-    MAX_INFERENCE_STEPS: int = 100
+    MAX_PROMPT_LENGTH: int = 300
+    MAX_GUIDANCE_SCALE: float = 10.0
+    MAX_INFERENCE_STEPS: int = 50
     
     @classmethod
     def validate_prompt(cls, prompt: str) -> None:
