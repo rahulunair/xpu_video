@@ -2,11 +2,11 @@ services:
   auth:
     build:
       context: ./auth
-    container_name: video_auth
+    container_name: service_auth
     environment:
       - VALID_TOKEN=${VALID_TOKEN:-test-token}
     networks:
-      - video_net
+      - service_network
     expose:
       - "9001"
     healthcheck:
@@ -32,7 +32,7 @@ services:
 
   proxy:
     image: traefik:v3.2.1
-    container_name: video_proxy
+    container_name: service_proxy
     command:
       - "--api.insecure=true"
       - "--providers.docker=true"
@@ -50,7 +50,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./traefik:/etc/traefik/dynamic:ro
     networks:
-      - video_net
+      - service_network
     depends_on:
       auth:
         condition: service_healthy
@@ -58,7 +58,7 @@ services:
     mem_limit: 512M
     mem_reservation: 256M
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://loc      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://loc      interval: 10s
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/api/rawdata"]
       timeout: 5s
       retries: 3
     logging:
@@ -68,8 +68,8 @@ services:
         max-file: "5"
 
 networks:
-  video_net:
-    name: video_network
+  service_network:
+    name: service_network
     driver: bridge
     ipam:
       driver: default
