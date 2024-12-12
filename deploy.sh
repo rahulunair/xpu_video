@@ -5,7 +5,7 @@
 # ==============================================================================
 # This script deploys the Video API service with the specified model.
 # It manages Docker services, generates authentication tokens, and provides
-# options to skip restarting base services.
+# options to skip restarting base services and rebuild specific services.
 # ==============================================================================
 
 set -e
@@ -31,21 +31,31 @@ for name, config in MODEL_CONFIGS.items():
     echo "Options:"
     echo "  --help, -h     Show this help message"
     echo "  --skip-base    Don't restart base services (Traefik & Auth)"
+    echo "  --rebuild      Rebuild the video service container"
     echo
     echo "Examples:"
     echo "  ./deploy.sh                          # Deploy with default model"
-    echo "  ./deploy.sh cogvideox                # Deploy with CogVideoX-2b mode    echo "  ./deploy.sh cogvideox                # Deploy with CogVideoX-2b mode    echo "  ./deploy.sh cogvideox --skip-base    # Change model without restarti    echo "  ./deploy.sh cogvideox --skip-base    # Change model without restarti}
+    echo "  ./deploy.sh cogvideox                # Deploy with CogVideoX-2b model"
+    echo "  ./deploy.sh cogvideox --skip-base    # Change model without restarting base"
+    echo "  ./deploy.sh --rebuild                # Rebuild and deploy with default model"
+    echo "  ./deploy.sh cogvideox --rebuild      # Rebuild and deploy with specific model"
+}
 
 # ------------------------------------------------------------------------------
 # Parse Command-Line Arguments
 # ------------------------------------------------------------------------------
 SKIP_BASE=false
+REBUILD=false
 MODEL=""
 
 for arg in "$@"; do
     case $arg in
         --skip-base)
             SKIP_BASE=true
+            shift
+            ;;
+        --rebuild)
+            REBUILD=true
             shift
             ;;
         --help|-h)
@@ -62,7 +72,8 @@ done
 
 # Validate model name against available configs
 if [ -n "$MODEL" ]; then
-    if ! python3 -c "from config.model_configs import MODEL_CONFIGS; exit(0 if '    if ! python3 -c "from config.model_configs import MODEL_CONFIGS; exit(0 if '        echo "Error: Invalid model name '$MODEL'"
+    if ! python3 -c "from config.model_configs import MODEL_CONFIGS; exit(0 if '$MODEL' in MODEL_CONFIGS else 1)"; then
+        echo "Error: Invalid model name '$MODEL'"
         echo "Run './deploy.sh --help' to see available models"
         exit 1
     fi
@@ -94,7 +105,8 @@ generate_secure_token() {
     local adj2_idx=$(($(openssl rand -hex 1 | od -An -i) % ${#adjectives[@]}))
     local noun_idx=$(($(openssl rand -hex 1 | od -An -i) % ${#nouns[@]}))
     local random_hex=$(openssl rand -hex 12)
-    echo "${adjectives[$adj1_idx]}-${adjectives[$adj2_idx]}-${nouns[$noun_idx]}-    echo "${adjectives[$adj1_idx]}-${adjectives[$adj2_idx]}-${nouns[$noun_idx]}-}
+    echo "${adjectives[$adj1_idx]}-${adjectives[$adj2_idx]}-${nouns[$noun_idx]}-$random_hex"
+}
 
 # ------------------------------------------------------------------------------
 # Check Docker Status
@@ -142,10 +154,15 @@ if [ "$SKIP_BASE" = false ]; then
     sleep 10
 else
     echo "Skipping base services startup (--skip-base flag detected)"
-    echo "Only restarting video service..."
-    docker compose down
-    docker compose up -d
+    if [ "$REBUILD" = true ]; then
+        echo "Rebuilding video service..."
+        docker compose build video
+    fi
+    echo "Restarting video service..."
+    docker compose down video
+    docker compose up -d video
 fi
+
 # ------------------------------------------------------------------------------
 # Wait for Service to be Ready
 # ------------------------------------------------------------------------------
@@ -164,7 +181,8 @@ echo "You can monitor the status with: ./monitor_video.sh"
 TIMEOUT=300  # Increased timeout for model loading
 START_TIME=$(date +%s)
 while true; do
-    if curl -s -H "Authorization: Bearer $VALID_TOKEN" http://localhost:9000/ima    if curl -s -H "Authorization: Bearer $VALID_TOKEN" http://localhost:9000/ima        break
+    if curl -s -H "Authorization: Bearer $VALID_TOKEN" http://localhost:9000/imagine/health | grep -q "ok"; then
+        break
     fi
 
     CURRENT_TIME=$(date +%s)
@@ -184,7 +202,8 @@ done
 # Display Available Models and Example Usage
 # ------------------------------------------------------------------------------
 echo -e "\n=== Model Info ==="
-response=$(curl -s -H "Authorization: Bearer $VALID_TOKEN" http://localhost:9000response=$(curl -s -H "Authorization: Bearer $VALID_TOKEN" http://localhost:9000if echo "$response" | python3 -m json.tool > /dev/null 2>&1; then
+response=$(curl -s -H "Authorization: Bearer $VALID_TOKEN" http://localhost:9000/imagine/info)
+if echo "$response" | python3 -m json.tool > /dev/null 2>&1; then
     echo "$response" | python3 -m json.tool
 else
     echo "Error getting model info. Raw response:"
@@ -194,13 +213,16 @@ fi
 
 echo -e "\n=== Quick API Examples ==="
 echo "# Health Check"
-echo "curl http://localhost:9000/imagine/health -H \"Authorization: Bearer \$VALecho "curl http://localhost:9000/imagine/health -H \"Authorization: Bearer \$VALecho
+echo "curl http://localhost:9000/imagine/health -H \"Authorization: Bearer \$VALID_TOKEN\""
+echo
 echo "# Get Model Info"
-echo "curl http://localhost:9000/imagine/info -H \"Authorization: Bearer \$VALIDecho "curl http://localhost:9000/imagine/info -H \"Authorization: Bearer \$VALIDecho
+echo "curl http://localhost:9000/imagine/info -H \"Authorization: Bearer \$VALID_TOKEN\""
+echo
 echo "# Generate Video"
-echo "curl -X POST http://localhost:9000/imagine/imagine \\"
+echo "curl -X POST http://localhost:9000/imagine/generate \\"
 echo "  -H \"Authorization: Bearer \$VALID_TOKEN\" \\"
 echo "  -H \"Content-Type: application/json\" \\"
-echo "  -d '{\"prompt\":\"a magical cosmic unicorn flying through space\",\"num_echo "  -d '{\"prompt\":\"a magical cosmic unicorn flying through space\",\"num_echo
+echo "  -d '{\"prompt\":\"a magical cosmic unicorn flying through space\",\"num_frames\":24}'"
+
 echo -e "\n=== Monitor Service ==="
 echo "./monitor_video.sh"
