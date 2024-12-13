@@ -145,7 +145,7 @@ if [ "$SKIP_BASE" = false ]; then
     docker compose build
 
     echo "Starting services in order..."
-    echo "1. Starting base services (Traefik and Auth)..."
+    echo "1. Starting base services (Network creation, Traefik and Auth)..."
     docker compose -f docker-compose.base.yml up -d
     echo "Waiting for base services to be healthy..."
     sleep 5
@@ -156,11 +156,12 @@ else
     echo "Skipping base services startup (--skip-base flag detected)"
     if [ "$REBUILD" = true ]; then
         echo "Rebuilding video service..."
-        docker compose build video
+        docker compose build video --no-cache
     fi
     echo "Restarting video service..."
     docker compose down video
-    docker compose up -d video
+    docker compose build
+    docker compose up -d video 
 fi
 
 # ------------------------------------------------------------------------------
@@ -178,7 +179,7 @@ echo "🔍 Monitor Video service: ./monitor_video.sh"
 echo -e "\n⏳ Waiting for Video service to be ready..."
 echo "You can monitor the status with: ./monitor_video.sh"
 
-TIMEOUT=30 
+TIMEOUT=3 
 START_TIME=$(date +%s)
 while true; do
     if curl -s -H "Authorization: Bearer $VALID_TOKEN" http://localhost:9000/imagine/health | grep -q "ok"; then

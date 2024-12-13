@@ -2,14 +2,14 @@ http:
   middlewares:
     global-limit:
       rateLimit:
-        average: 4
-        burst: 10
+        average: 30
+        burst: 60
         period: 1s
 
     ip-limit:
       rateLimit:
-        average: 2
-        burst: 4
+        average: 15
+        burst: 30
         period: 1s
         sourceCriterion:
           ipStrategy:
@@ -23,7 +23,7 @@ http:
         stsSeconds: 31536005
         stsIncludeSubdomains: true
         customResponseHeaders:
-          X-Server: "service-proxy"
+          X-Server: "SD-Proxy"
 
     cors-headers:
       headers:

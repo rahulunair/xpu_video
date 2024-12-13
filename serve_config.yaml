@@ -30,7 +30,7 @@ applications:
   deployments:
   - name: VideoGenerationServer
     num_replicas: 1
-    max_ongoing_requests: 2
-    max_queued_requests: 4
+    max_ongoing_requests: 4
+    max_queued_requests: 20
     ray_actor_options:
       num_cpus: 28.0

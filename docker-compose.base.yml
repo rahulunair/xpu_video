@@ -16,8 +16,8 @@ services:
       retries: 3
     labels:
       - "traefik.enable=true"
-      - "traefik.http.services.video-auth.loadbalancer.server.port=9001"
-      - "traefik.http.routers.video-auth.rule=PathPrefix(`/auth`)"
+      - "traefik.http.services.auth.loadbalancer.server.port=9001"
+      - "traefik.http.routers.auth.rule=PathPrefix(`/auth`)"
     restart: unless-stopped
     read_only: true
     security_opt:

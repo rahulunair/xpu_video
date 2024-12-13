@@ -41,8 +41,8 @@ app.add_middleware(
 @serve.deployment(
     ray_actor_options={"num_cpus": 28},
     num_replicas=1,
-    max_ongoing_requests=2,
-    max_queued_requests=4,
+    max_ongoing_requests=4,
+    max_queued_requests=20,
 )
 @serve.ingress(app)
 class VideoGenerationServer:
