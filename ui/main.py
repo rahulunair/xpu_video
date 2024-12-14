@@ -1,5 +1,9 @@
 import streamlit as st
-from video_generation import AsyncVideoGenerator, generate_unique_filename, cleanup_old_videos
+from video_generation import (
+    AsyncVideoGenerator,
+    generate_unique_filename,
+    cleanup_old_videos,
+)
 from image_generation import ImageGenerator
 from config import config, logger, output_dir
 from style import apply_styles
@@ -11,6 +15,7 @@ image_generator = ImageGenerator()
 
 DEFAULT_PROMPT = "A scenic Ghibli-style village"
 
+
 def render_header():
     st.markdown(
         """
@@ -21,6 +26,7 @@ def render_header():
         """,
         unsafe_allow_html=True,
     )
+
 
 def render_video_input_section():
     with st.container():
@@ -38,6 +44,7 @@ def render_video_input_section():
             fps = st.slider("Frames per second", 1, config.max_fps, 30)
 
         return prompt, num_frames, fps
+
 
 def render_image_input_section():
     with st.container():
@@ -63,9 +70,12 @@ def render_image_input_section():
 
         return prompt, num_variations, img_size, guidance_scale, num_inference_steps
 
+
 def display_previous_generations():
     if st.session_state.get("generated_items"):
-        st.markdown("<h2 style='margin-top: 2rem;'>Your Gallery</h2>", unsafe_allow_html=True)
+        st.markdown(
+            "<h2 style='margin-top: 2rem;'>Your Gallery</h2>", unsafe_allow_html=True
+        )
         gallery_container = st.container()
         with gallery_container:
             cols = st.columns(len(st.session_state["generated_items"]))
@@ -77,6 +87,7 @@ def display_previous_generations():
                         st.image(item["path"])
                     st.markdown(f"**Prompt:** {item['prompt']}")
                     st.markdown(f"*Generated on: {item['timestamp']}*")
+
 
 def main():
     st.set_page_config(
@@ -119,7 +130,9 @@ def main():
 
                 while not result:
                     elapsed_time = int(time.time() - start_time)
-                    current_message = status_messages[(elapsed_time // 5) % len(status_messages)]
+                    current_message = status_messages[
+                        (elapsed_time // 5) % len(status_messages)
+                    ]
                     status_container.markdown(f"**{current_message}**")
                     result = video_generator.get_result(task_id)
                     time.sleep(0.5)
@@ -130,12 +143,14 @@ def main():
 
                 cleanup_old_videos()
 
-                st.session_state["generated_items"].append({
-                    "type": "video",
-                    "path": str(video_path),
-                    "prompt": prompt,
-                    "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                })
+                st.session_state["generated_items"].append(
+                    {
+                        "type": "video",
+                        "path": str(video_path),
+                        "prompt": prompt,
+                        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    }
+                )
 
                 st.success("Video generated successfully!")
                 st.video(str(video_path))
@@ -145,7 +160,9 @@ def main():
                 st.error("Please enter a prompt to generate a video.")
 
     elif mode == "Image":
-        prompt, num_variations, img_size, guidance_scale, num_inference_steps = render_image_input_section()
+        prompt, num_variations, img_size, guidance_scale, num_inference_steps = (
+            render_image_input_section()
+        )
 
         if st.button("Generate Images", disabled=st.session_state["is_generating"]):
             if prompt:
@@ -164,12 +181,14 @@ def main():
                     with open(image_path, "wb") as f:
                         f.write(image_data)
 
-                    st.session_state["generated_items"].append({
-                        "type": "image",
-                        "path": str(image_path),
-                        "prompt": f"{prompt} (variation {idx + 1})",
-                        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                    })
+                    st.session_state["generated_items"].append(
+                        {
+                            "type": "image",
+                            "path": str(image_path),
+                            "prompt": f"{prompt} (variation {idx + 1})",
+                            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        }
+                    )
 
                     st.image(image_path)
 
@@ -180,6 +199,6 @@ def main():
 
     display_previous_generations()
 
+
 if __name__ == "__main__":
     main()
-

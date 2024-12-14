@@ -10,9 +10,10 @@ import logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[logging.StreamHandler()]
+    handlers=[logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
+
 
 @dataclass
 class ImageConfig:
@@ -22,7 +23,9 @@ class ImageConfig:
     default_guidance_scale: int = 7
     default_num_inference_steps: int = 50
 
+
 config = ImageConfig()
+
 
 class ImageGenerator:
     def __init__(self):
@@ -45,27 +48,54 @@ class ImageGenerator:
             logger.info("Image generation successful")
             return response.content
         else:
-            logger.error(f"Image generation failed: {response.status_code}, {response.text}")
-            raise Exception(f"Image generation failed: {response.status_code}, {response.text}")
+            logger.error(
+                f"Image generation failed: {response.status_code}, {response.text}"
+            )
+            raise Exception(
+                f"Image generation failed: {response.status_code}, {response.text}"
+            )
 
-    def generate_image_variations(self, prompt: str, num_variations: int, progress_callback: Callable[[float], None] = None) -> List[bytes]:
+    def generate_image_variations(
+        self,
+        prompt: str,
+        num_variations: int,
+        progress_callback: Callable[[float], None] = None,
+    ) -> List[bytes]:
         variations = []
-        enhancement_phrases = ["4K resolution", "ultra-realistic", "cinematic lighting", "high detail"]
-        logger.info(f"Starting generation of {num_variations} variations for prompt: {prompt}")
+        enhancement_phrases = [
+            "4K resolution",
+            "ultra-realistic",
+            "cinematic lighting",
+            "high detail",
+        ]
+        logger.info(
+            f"Starting generation of {num_variations} variations for prompt: {prompt}"
+        )
         for i in range(num_variations):
             enhancement = enhancement_phrases[i % len(enhancement_phrases)]
-            enhanced_prompt = f"{prompt}, {enhancement}"  # Modify the prompt with enhancements
+            enhanced_prompt = (
+                f"{prompt}, {enhancement}"  # Modify the prompt with enhancements
+            )
             try:
-                logger.info(f"Generating variation {i + 1}/{num_variations} with enhanced prompt: {enhanced_prompt}")
+                logger.info(
+                    f"Generating variation {i + 1}/{num_variations} with enhanced prompt: {enhanced_prompt}"
+                )
                 image = self.generate_image(enhanced_prompt)
                 variations.append(image)
-                logger.info(f"Successfully generated variation {i + 1}/{num_variations}")
+                logger.info(
+                    f"Successfully generated variation {i + 1}/{num_variations}"
+                )
                 if progress_callback:
                     progress_callback((i + 1) / num_variations)
             except Exception as e:
-                logger.error(f"Failed to generate variation {i + 1}/{num_variations}: {e}")
-        logger.info(f"Completed generation of {len(variations)} variations out of {num_variations}")
+                logger.error(
+                    f"Failed to generate variation {i + 1}/{num_variations}: {e}"
+                )
+        logger.info(
+            f"Completed generation of {len(variations)} variations out of {num_variations}"
+        )
         return variations
+
 
 output_dir = Path("generated_images")
 output_dir.mkdir(exist_ok=True)
@@ -78,4 +108,3 @@ if __name__ == "__main__":
         with open(output_dir / f"image_{idx + 1}.png", "wb") as f:
             f.write(image)
         logger.info(f"Saved: image_{idx + 1}.png")
-

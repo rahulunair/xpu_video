@@ -14,6 +14,7 @@ class AppConfig:
     rate_limit_requests: int = 5
     rate_limit_window: int = 60
 
+
 config = AppConfig()
 logging.basicConfig(
     level=logging.INFO,
