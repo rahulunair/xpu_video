@@ -8,6 +8,12 @@ This document provides the details and `curl` examples for interacting with the 
 http://localhost:9000
 ```
 
+## Authentication
+All endpoints require authentication using a Bearer token in the Authorization header:
+```
+Authorization: Bearer <your_token>
+```
+
 ## Endpoints
 
 ### 1. **Health Check**
@@ -25,7 +31,9 @@ Check the health status of the server and model.
 
 #### `curl` Example
 ```bash
-curl -X GET http://localhost:9000/health
+curl -X GET \
+  -H "Authorization: Bearer $VALID_TOKEN" \
+  http://localhost:9000/health
 ```
 
 ---
@@ -59,7 +67,9 @@ Retrieve information about the loaded model and system.
 
 #### `curl` Example
 ```bash
-curl -X GET http://localhost:9000/info
+curl -X GET \
+  -H "Authorization: Bearer $VALID_TOKEN" \
+  http://localhost:9000/info
 ```
 
 ---
@@ -69,6 +79,10 @@ curl -X GET http://localhost:9000/info
 #### **POST** `/generate`
 
 Generate a video based on the given parameters.
+
+#### Request Headers
+- **`Authorization`** *(required)*: Bearer token
+- **`Content-Type`**: application/json
 
 #### Request Body (JSON)
 - **`prompt`** *(string, required)*: The prompt for video generation.
@@ -111,8 +125,9 @@ This command will save the generated video as `generated_video.mp4` locally.
 ---
 
 ## Notes
-- Ensure the `Authorization` header includes a valid bearer token.
-- The `num_frames` and `fps` parameters determine the length and quality of the generated video.
-- Use the `/info` endpoint to get detailed model and system configurations before generating a video.
+- Authentication is required for all endpoints using a Bearer token
+- The `Authorization` header must be included in every request
+- The `num_frames` and `fps` parameters determine the length and quality of the generated video
+- Use the `/info` endpoint to get detailed model and system configurations before generating a video
 
 

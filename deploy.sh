@@ -227,3 +227,9 @@ echo "  -d '{\"prompt\":\"a magical cosmic unicorn flying through space\",\"num_
 
 echo -e "\n=== Monitor Service ==="
 echo "./monitor_video.sh"
+# ------------------------------------------------------------------------------
+# Optional UI Deployment
+# ------------------------------------------------------------------------------
+# At the end of deploy.sh, replace the UI section with:
+echo -e "\n=== Optional UI Deployment ==="
+echo "To deploy the UI, run: ./deploy_ui.sh"

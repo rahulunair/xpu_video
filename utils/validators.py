@@ -23,7 +23,13 @@ class VideoGenerationValidator:
             )
 
     @staticmethod
-    def validate_range(value: Optional[Union[int, str]], min_val: int, max_val: int, name: str, default: int) -> int:
+    def validate_range(
+        value: Optional[Union[int, str]],
+        min_val: int,
+        max_val: int,
+        name: str,
+        default: int,
+    ) -> int:
         """Validate a numeric value is within a given range, or use the default."""
         if value is None:
             return default

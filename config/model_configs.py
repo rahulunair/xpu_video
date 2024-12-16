@@ -18,5 +18,5 @@ MODEL_CONFIGS = {
         "min_fps": 1,
         "max_fps": 60,
         "default": False,
-    }
+    },
 }
