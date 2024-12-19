@@ -33,7 +33,7 @@ Check the health status of the server and model.
 ```bash
 curl -X GET \
   -H "Authorization: Bearer $VALID_TOKEN" \
-  http://localhost:9000/health
+  http://localhost:9000/imagine/health
 ```
 
 ---
@@ -69,7 +69,7 @@ Retrieve information about the loaded model and system.
 ```bash
 curl -X GET \
   -H "Authorization: Bearer $VALID_TOKEN" \
-  http://localhost:9000/info
+  http://localhost:9000/imagine/info
 ```
 
 ---
@@ -117,7 +117,7 @@ curl -X POST \
     "guidance_scale": 7.5,
     "num_inference_steps": 50
   }' \
-  http://localhost:9000/generate -o generated_video.mp4
+  http://localhost:9000/imagine/generate -o generated_video.mp4
 ```
 
 This command will save the generated video as `generated_video.mp4` locally.
