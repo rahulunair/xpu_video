@@ -1,12 +1,14 @@
-import requests
-from pathlib import Path
 import logging
-import traceback
-from datetime import datetime
-from collections import deque
-import threading
 import queue as Queue
-from config import config, logger, VALID_TOKEN, output_dir
+import threading
+import traceback
+from collections import deque
+from datetime import datetime
+from pathlib import Path
+
+import requests
+
+from config import VALID_TOKEN, config, logger, output_dir
 
 
 class VideoGenerator:

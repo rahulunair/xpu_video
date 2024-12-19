@@ -29,6 +29,5 @@ MODEL_CONFIGS = {
         "default_steps": 4,
         "default_guidance": 1.0,
         "default": False,
-
-    }
+    },
 }

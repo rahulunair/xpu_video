@@ -5,9 +5,9 @@ warnings.filterwarnings("ignore")  # ipex warning
 import logging
 from typing import Any, Dict
 
+import intel_extension_for_pytorch
 import psutil
 import torch
-import intel_extension_for_pytorch
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

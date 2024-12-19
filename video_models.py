@@ -3,12 +3,14 @@ import warnings
 warnings.filterwarnings("ignore")
 
 import logging
-from typing import Any, Dict, List
-import torch
-import intel_extension_for_pytorch as ipex
-from diffusers import CogVideoXPipeline, AnimateDiffPipeline, MotionAdapter, EulerDiscreteScheduler
-from diffusers.utils import export_to_video, export_to_gif
 import time
+from typing import Any, Dict, List
+
+import intel_extension_for_pytorch as ipex
+import torch
+from diffusers import (AnimateDiffPipeline, CogVideoXPipeline,
+                       EulerDiscreteScheduler, MotionAdapter)
+from diffusers.utils import export_to_gif, export_to_video
 from huggingface_hub import hf_hub_download
 from safetensors.torch import load_file
 
@@ -73,13 +75,9 @@ class CogVideoXModel(BaseVideoModel):
             self.model_id, torch_dtype=self.dtype
         )
         self.pipe = self.pipe.to(device=self.device, dtype=self.dtype)
-
-        # Enable optimizations
         self.pipe.vae.enable_slicing()
         self.pipe.vae.enable_tiling()
         self.pipe = self.pipe.to(self.device)
-
-        # Optimize components
         self.pipe.text_encoder = self.pipe.text_encoder.to(
             device=self.device, dtype=self.dtype
         )
@@ -92,10 +90,7 @@ class CogVideoXModel(BaseVideoModel):
             device=self.device, dtype=self.dtype
         )
         self.pipe.transformer = optimize_transformer(self.pipe.transformer)
-
-        # Perform warmup
         self._warmup()
-
         logger.info(
             f"Initialized {self.model_id} with device={self.device}, dtype={self.dtype}"
         )
@@ -121,15 +116,12 @@ class CogVideoXModel(BaseVideoModel):
         video_frames = perform_inference(
             self.pipe, prompt, device=self.device, **kwargs
         )
-
         output_path = kwargs.get("output_path", "output.mp4")
         fps = kwargs.get("fps", 49)
         export_to_video(video_frames, output_path, fps=fps)
-
         inference_time = time.time() - start_time
         logger.info(f"Inference time: {inference_time:.2f} seconds")
         logger.info(f"Video saved as: {output_path}")
-
         return output_path
 
     def get_model_info(self) -> Dict[str, Any]:
@@ -153,29 +145,20 @@ class CogVideoX5BModel(BaseVideoModel):
             self.model_id, torch_dtype=self.dtype
         )
         self.pipe = self.pipe.to(device=self.device, dtype=self.dtype)
-
-        # Enable optimizations
         self.pipe.vae.enable_slicing()
         self.pipe.vae.enable_tiling()
         self.pipe = self.pipe.to(self.device)
-
-        # Optimize components
         self.pipe.text_encoder = self.pipe.text_encoder.to(
             device=self.device, dtype=self.dtype
         )
         self.pipe.text_encoder = optimize_transformer(self.pipe.text_encoder)
-
         self.pipe.vae = self.pipe.vae.to(device=self.device, dtype=self.dtype)
         self.pipe.vae = ipex.optimize(self.pipe.vae, dtype=self.dtype, inplace=True)
-
         self.pipe.transformer = self.pipe.transformer.to(
             device=self.device, dtype=self.dtype
         )
         self.pipe.transformer = optimize_transformer(self.pipe.transformer)
-
-        # Perform warmup
         self._warmup()
-
         logger.info(
             f"Initialized {self.model_id} with device={self.device}, dtype={self.dtype}"
         )
@@ -201,11 +184,9 @@ class CogVideoX5BModel(BaseVideoModel):
         video_frames = perform_inference(
             self.pipe, prompt, device=self.device, **kwargs
         )
-
         output_path = kwargs.get("output_path", "output.mp4")
         fps = kwargs.get("fps", 49)
         export_to_video(video_frames, output_path, fps=fps)
-
         inference_time = time.time() - start_time
         logger.info(f"Inference time: {inference_time:.2f} seconds")
         logger.info(f"Video saved as: {output_path}")
@@ -222,89 +203,84 @@ class CogVideoX5BModel(BaseVideoModel):
 
 
 class AnimateDiffModel(BaseVideoModel):
+    VALID_STEPS = [1, 2, 4, 8]
+    DEFAULT_STEP = 4
+
     def __init__(self, device: str = "xpu", dtype: torch.dtype = torch.bfloat16):
         self.model_id = "ByteDance/AnimateDiff-Lightning"
         self.base_model = "emilianJR/epiCRealism"
         self.device = device
         self.dtype = dtype
+        self.step = self._validate_step(self.DEFAULT_STEP)
         self._initialize_model()
 
-    def _initialize_model(self):
-        # Initialize adapter
-        self.adapter = MotionAdapter().to(self.device, self.dtype)
-        ckpt = "animatediff_lightning_4step_diffusers.safetensors"
-        self.adapter.load_state_dict(
-            load_file(hf_hub_download(self.model_id, ckpt), device=self.device)
-        )
-        self.adapter.eval()
-
-        # Initialize pipeline
-        self.pipe = AnimateDiffPipeline.from_pretrained(
-            self.base_model,
-            motion_adapter=self.adapter,
-            torch_dtype=self.dtype
-        ).to(self.device)
-
-        # Enable optimizations
-        self.pipe.unet.eval()
-        self.pipe.unet = ipex.optimize(self.pipe.unet, dtype=self.dtype, inplace=True)
-        
-        # Optimize VAE similar to other models
-        self.pipe.vae.enable_slicing()
-        self.pipe.vae.enable_tiling()
-        self.pipe.vae = self.pipe.vae.to(device=self.device, dtype=self.dtype)
-        self.pipe.vae = ipex.optimize(self.pipe.vae, dtype=self.dtype, inplace=True)
-
-        # Optimize text encoder
-        self.pipe.text_encoder = self.pipe.text_encoder.to(device=self.device, dtype=self.dtype)
-        self.pipe.text_encoder = optimize_transformer(self.pipe.text_encoder)
-
-        # Set scheduler
-        self.pipe.scheduler = EulerDiscreteScheduler.from_config(
-            self.pipe.scheduler.config,
-            timestep_spacing="trailing",
-            beta_schedule="linear"
-        )
-
-        # Perform warmup
-        self._warmup()
-
-        logger.info(
-            f"Initialized {self.model_id} with device={self.device}, dtype={self.dtype}"
-        )
-
-    def _warmup(self):
-        """Perform warmup inference"""
-        logger.info("Starting warmup...")
-        with torch.inference_mode(), torch.xpu.amp.autocast():
-            _ = self.pipe(
-                prompt="test",
-                num_frames=8,
-                guidance_scale=1.0,
-                num_inference_steps=4,
+    def _validate_step(self, step: int) -> int:
+        """Validate and return a safe step value"""
+        if step not in self.VALID_STEPS:
+            logger.warning(
+                f"Invalid step value {step}. Must be one of {self.VALID_STEPS}. "
+                f"Using default value {self.DEFAULT_STEP}"
             )
-        if torch.xpu.is_available():
-            torch.xpu.synchronize()
-        logger.info("Warmup completed")
+            return self.DEFAULT_STEP
+        return step
+
+    def _initialize_model(self):
+        try:
+            logger.info("Initializing AnimateDiff model...")
+            self.adapter = MotionAdapter().to(self.device, self.dtype)
+            self.step = self._validate_step(self.step)
+            ckpt = f"animatediff_lightning_{self.step}step_diffusers.safetensors"
+
+            self.adapter.load_state_dict(
+                load_file(hf_hub_download(self.model_id, ckpt), device=self.device)
+            )
+            self.adapter.eval()
+            self.pipe = AnimateDiffPipeline.from_pretrained(
+                self.base_model, motion_adapter=self.adapter, torch_dtype=self.dtype
+            ).to(self.device)
+            self.pipe.unet.eval()
+            self.pipe.unet = ipex.optimize(self.pipe.unet)
+            self.pipe.scheduler = EulerDiscreteScheduler.from_config(
+                self.pipe.scheduler.config,
+                timestep_spacing="trailing",
+                beta_schedule="linear",
+            )
+            logger.info("AnimateDiff model initialized successfully")
+        except Exception as e:
+            logger.error(f"Failed to initialize AnimateDiff model: {str(e)}")
+            raise
 
     def generate(self, prompt: str, **kwargs) -> str:
-        start_time = time.time()
-        video_frames = perform_inference(
-            self.pipe,
-            prompt,
-            device=self.device,
-            **kwargs
-        )
-
-        output_path = kwargs.get("output_path", "output.gif")
-        fps = kwargs.get("fps", 8)
-        export_to_gif(video_frames, output_path, fps=fps)
-
-        inference_time = time.time() - start_time
-        logger.info(f"Inference time: {inference_time:.2f} seconds")
-        logger.info(f"Animation saved as: {output_path}")
-
-        return output_path
+        try:
+            start_time = time.time()
+            requested_steps = kwargs.get("num_inference_steps", self.step)
+            safe_steps = self._validate_step(requested_steps)
+            if safe_steps != requested_steps:
+                logger.warning(
+                    f"Requested {requested_steps} inference steps, but using {safe_steps} "
+                    f"as it's the closest valid value for AnimateDiff-Lightning"
+                )
+            params = {
+                "prompt": prompt,
+                "guidance_scale": kwargs.get("guidance_scale", 1.0),
+                "num_inference_steps": safe_steps,
+                "num_frames": kwargs.get("num_frames", 32),
+            }
+            with torch.inference_mode(), torch.xpu.amp.autocast():
+                video_frames = self.pipe(**params).frames[0]
+            output_path = kwargs.get("output_path", "output.gif")
+            fps = kwargs.get("fps", 8)
+            export_to_gif(video_frames, output_path, fps=fps)
+            inference_time = time.time() - start_time
+            logger.info(f"Inference time: {inference_time:.2f} seconds")
+            logger.info(f"Animation saved as: {output_path}")
+            return output_path
+        except Exception as e:
+            logger.error(f"Generation failed: {str(e)}")
+            raise
+        finally:
+            if hasattr(torch.xpu, "empty_cache"):
+                torch.xpu.empty_cache()
 
     def get_model_info(self) -> Dict[str, Any]:
         return {
@@ -313,6 +289,8 @@ class AnimateDiffModel(BaseVideoModel):
             "model_type": "AnimateDiff",
             "device": self.device,
             "dtype": str(self.dtype),
+            "step": self.step,
+            "valid_steps": self.VALID_STEPS,  # Add valid steps to model info
         }
 
 

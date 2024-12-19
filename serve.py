@@ -4,18 +4,17 @@ import os
 import tempfile
 from typing import Any, Dict, Optional, Union
 
+import intel_extension_for_pytorch as ipex
 import ray.serve as serve
 import torch
-import intel_extension_for_pytorch as ipex
-
-from fastapi import FastAPI, HTTPException, Body
+from fastapi import Body, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
 from config.model_configs import MODEL_CONFIGS as VIDEO_MODEL_CONFIGS
-from video_models import VideoModelFactory
 from utils.system_monitor import SystemMonitor
 from utils.validators import VideoGenerationValidator
+from video_models import VideoModelFactory
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

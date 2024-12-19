@@ -1,10 +1,11 @@
 # image_generation.py
-import requests
-from typing import List, Callable
+import logging
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from dataclasses import dataclass
-import logging
+from typing import Callable, List
+
+import requests
 
 # Configure logging
 logging.basicConfig(
