@@ -41,7 +41,7 @@ def perform_inference(pipe, prompt: str, **kwargs) -> List[torch.Tensor]:
                 prompt=prompt,
                 num_videos_per_prompt=kwargs.get("num_videos_per_prompt", 1),
                 num_inference_steps=kwargs.get("num_inference_steps", 50),
-                num_frames=kwargs.get("num_frames", 49),
+                num_frames=kwargs.get("num_frames", 16),
                 guidance_scale=kwargs.get("guidance_scale", 6),
                 generator=torch.Generator(
                     device=kwargs.get("device", "xpu")

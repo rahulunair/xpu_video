@@ -98,7 +98,6 @@ class VideoGenerationServer:
             None, description="Number of inference steps for generation"
         ),
     ) -> FileResponse:
-        """Generate a video synchronously and return it."""
         if not self.model_status["is_loaded"]:
             raise HTTPException(
                 status_code=503,
@@ -115,9 +114,15 @@ class VideoGenerationServer:
                 num_frames=num_frames,
                 fps=fps,
             )
-
-            # Generate video
-            output_path = tempfile.NamedTemporaryFile(suffix=".mp4", delete=False).name
+            is_animatediff = self.model_name == "animatediff"
+            file_extension = ".gif" if is_animatediff else ".mp4"
+            media_type = "image/gif" if is_animatediff else "video/mp4"
+            filename = (
+                "generated_animation.gif" if is_animatediff else "generated_video.mp4"
+            )
+            output_path = tempfile.NamedTemporaryFile(
+                suffix=file_extension, delete=False
+            ).name
             self.model_status["model"].generate(
                 prompt=prompt,
                 num_frames=params["num_frames"],
@@ -126,16 +131,13 @@ class VideoGenerationServer:
                 num_inference_steps=params["num_inference_steps"],
                 output_path=output_path,
             )
-
-            # Return generated video as a response
             return FileResponse(
                 path=output_path,
-                media_type="video/mp4",
-                filename="generated_video.mp4",
+                media_type=media_type,
+                filename=filename,
                 headers={"Cache-Control": "no-cache", "Connection": "keep-alive"},
             )
         except HTTPException as e:
-            # Re-raise validation errors directly
             raise e
         except Exception as e:
             logger.error(f"Error during video generation: {e}")
