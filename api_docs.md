@@ -35,6 +35,11 @@ https://<random-string>.trycloudflare.com
 - **cogvideoX5b**: CogVideoX 5B parameter model
 - **animatediff**: AnimateDiff-Lightning model
 
+## Environment Variables
+- `DEFAULT_MODEL`: Set default model (default: "cogvideoX2b")
+- `VALID_TOKEN`: Authentication token
+
+
 ## Authentication
 All endpoints require authentication using a Bearer token:
 ```
@@ -99,7 +104,7 @@ curl -X GET \
 
 ### 3. **Video Generation**
 
-#### **POST** `/generate`
+#### **POST** `/imagine/generate`
 Generate a video based on the given parameters.
 
 #### Request Headers
@@ -107,54 +112,106 @@ Generate a video based on the given parameters.
 - **`Content-Type`**: application/json
 
 #### Request Body Parameters
-| Parameter | Type | Description | Model-Specific Limits |
-|-----------|------|-------------|---------------------|
-| `prompt` | string | Text description of the video to generate | Required for all models |
-| `num_frames` | integer | Number of frames to generate | CogVideoX: 8-49 frames (default: 49)<br>AnimateDiff: 8-32 frames (default: 16) |
-| `fps` | integer | Frames per second | CogVideoX: 1-60 (default: 49)<br>AnimateDiff: 1-30 (default: 8) |
-| `guidance_scale` | float | Guidance scale for generation | CogVideoX: 1-10 (default: 6.0)<br>AnimateDiff: 1-10 (default: 1.0) |
-| `num_inference_steps` | integer | Number of inference steps | CogVideoX: 1-50 (default: 50)<br>AnimateDiff: [1,2,4,8] only (default: 4) |
+| Parameter | Type | Description | Required | Model-Specific Details |
+|-----------|------|-------------|----------|----------------------|
+| `prompt` | string | Text description of the video to generate | Yes | Required for all models |
+| `guidance_scale` | float | Controls how closely the model follows the prompt | No | AnimateDiff: Default 1.0 (recommended)<br>CogVideoX: Default 6.0 |
+| `num_frames` | integer | Number of frames to generate | No | AnimateDiff: Default 8 (8-32)<br>CogVideoX: Default 24 (8-49) |
+| `fps` | integer | Frames per second | No | AnimateDiff: Default 8 (1-30)<br>CogVideoX: Default 49 (1-60) |
+| `num_inference_steps` | integer | Number of inference steps | No | AnimateDiff: [1,2,4,8] only (default: 4)<br>CogVideoX: 1-50 (default: 50) |
 
-#### Example Requests
+#### Minimal Request Examples
 
-**CogVideoX (2B/5B)**:
+**AnimateDiff (Recommended Settings)**:
 ```bash
 curl -X POST \
   -H "Authorization: Bearer $VALID_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "prompt": "A serene sunset over the ocean with birds flying in the sky.",
-    "num_frames": 49,
-    "fps": 49,
-    "guidance_scale": 6.0,
-    "num_inference_steps": 50
+    "prompt": "A cute cartoon robot waving hello, digital art style",
+    "guidance_scale": 1.0
   }' \
-  http://localhost:9000/imagine/generate
+  http://localhost:9000/imagine/generate --output animation.gif
 ```
 
-**AnimateDiff**:
+**CogVideoX**:
 ```bash
 curl -X POST \
   -H "Authorization: Bearer $VALID_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "prompt": "A serene sunset over the ocean with birds flying in the sky.",
-    "num_frames": 16,
-    "fps": 8,
-    "guidance_scale": 1.0,
-    "num_inference_steps": 4
+    "prompt": "A friendly cartoon robot dancing, digital art style",
+    "guidance_scale": 6.0
   }' \
-  http://localhost:9000/imagine/generate
+  http://localhost:9000/imagine/generate --output video.mp4
+```
+
+#### Request Schema
+
+#### Input JSON Schema
+```json
+{
+  "prompt": "string",
+  "guidance_scale": "number (optional)",
+  "num_frames": "integer (optional)",
+  "fps": "integer (optional)",
+  "num_inference_steps": "integer (optional)"
+}
+```
+
+#### Example Request Body
+```json
+{
+  "prompt": "A cute cartoon robot waving hello, digital art style",
+  "guidance_scale": 1.0,
+  "num_frames": 16,
+  "fps": 8,
+  "num_inference_steps": 4
+}
 ```
 
 #### Response
-- CogVideoX models return MP4 video files
-- AnimateDiff returns GIF files
+For AnimateDiff:
+- **Content-Type**: `image/gif`
+- **File**: Binary GIF data
+- **Filename**: `generated_animation.gif`
 
-## Notes
-- Each model has different optimal parameters and limitations
-- Use the `/info` endpoint to get model-specific configurations
-- For public access (evaluation only), use the Cloudflare tunnel URL instead of localhost
-- The API validates parameters based on the selected model's constraints
+For CogVideoX:
+- **Content-Type**: `video/mp4`
+- **File**: Binary MP4 data
+- **Filename**: `generated_video.mp4`
+
+#### Error Response Schema
+```json
+{
+  "detail": "string (error message)"
+}
+```
+
+#### Example Error Response
+```json
+{
+  "detail": "Prompt cannot be empty"
+}
+```
+
+
+## Model-Specific Recommendations
+
+### AnimateDiff
+- Best for: Short animations, cartoon-style content
+- Optimal settings:
+  - `guidance_scale`: 1.0
+  - `num_inference_steps`: 4
+  - `num_frames`: 8-16
+  - `fps`: 8
+
+### CogVideoX
+- Best for: Realistic videos, longer sequences
+- Optimal settings:
+  - `guidance_scale`: 6.0
+  - `num_inference_steps`: 50
+  - `num_frames`: 24-32
+  - `fps`: 49
 
 
