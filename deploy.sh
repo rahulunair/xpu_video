@@ -35,10 +35,10 @@ for name, config in MODEL_CONFIGS.items():
     echo
     echo "Examples:"
     echo "  ./deploy.sh                          # Deploy with default model"
-    echo "  ./deploy.sh cogvideox                # Deploy with CogVideoX-2b model"
-    echo "  ./deploy.sh cogvideox --skip-base    # Change model without restarting base"
+    echo "  ./deploy.sh cogvideoX2b                # Deploy with CogVideoX-2b model"
+    echo "  ./deploy.sh cogvideoX2b --skip-base    # Change model without restarting base"
     echo "  ./deploy.sh --rebuild                # Rebuild and deploy with default model"
-    echo "  ./deploy.sh cogvideox --rebuild      # Rebuild and deploy with specific model"
+    echo "  ./deploy.sh cogvideoX2b --rebuild      # Rebuild and deploy with specific model"
 }
 
 # ------------------------------------------------------------------------------
@@ -80,7 +80,7 @@ if [ -n "$MODEL" ]; then
 fi
 
 # Use default model if none specified
-DEFAULT_MODEL=${MODEL:-"cogvideox"}
+DEFAULT_MODEL=${MODEL:-"cogvideoX2b"}
 echo "ℹ️  Model: $DEFAULT_MODEL will be loaded"
 export DEFAULT_MODEL="$DEFAULT_MODEL"
 

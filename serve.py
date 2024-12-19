@@ -50,7 +50,7 @@ class VideoGenerationServer:
 
     def __init__(self):
         logger.info("Initializing Video Generation Server")
-        self.model_name = os.getenv("DEFAULT_MODEL", "cogvideox")
+        self.model_name = os.getenv("DEFAULT_MODEL", "cogvideoX2b")
         logger.info(f"Using model: {self.model_name}")
         self.model_status = {"is_loaded": False, "error": None, "model": None}
         self._load_model()

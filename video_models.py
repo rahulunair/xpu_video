@@ -6,9 +6,11 @@ import logging
 from typing import Any, Dict, List
 import torch
 import intel_extension_for_pytorch as ipex
-from diffusers import CogVideoXPipeline
-from diffusers.utils import export_to_video
+from diffusers import CogVideoXPipeline, AnimateDiffPipeline, MotionAdapter, EulerDiscreteScheduler
+from diffusers.utils import export_to_video, export_to_gif
 import time
+from huggingface_hub import hf_hub_download
+from safetensors.torch import load_file
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.WARNING)
@@ -219,12 +221,108 @@ class CogVideoX5BModel(BaseVideoModel):
         }
 
 
+class AnimateDiffModel(BaseVideoModel):
+    def __init__(self, device: str = "xpu", dtype: torch.dtype = torch.bfloat16):
+        self.model_id = "ByteDance/AnimateDiff-Lightning"
+        self.base_model = "emilianJR/epiCRealism"
+        self.device = device
+        self.dtype = dtype
+        self._initialize_model()
+
+    def _initialize_model(self):
+        # Initialize adapter
+        self.adapter = MotionAdapter().to(self.device, self.dtype)
+        ckpt = "animatediff_lightning_4step_diffusers.safetensors"
+        self.adapter.load_state_dict(
+            load_file(hf_hub_download(self.model_id, ckpt), device=self.device)
+        )
+        self.adapter.eval()
+
+        # Initialize pipeline
+        self.pipe = AnimateDiffPipeline.from_pretrained(
+            self.base_model,
+            motion_adapter=self.adapter,
+            torch_dtype=self.dtype
+        ).to(self.device)
+
+        # Enable optimizations
+        self.pipe.unet.eval()
+        self.pipe.unet = ipex.optimize(self.pipe.unet, dtype=self.dtype, inplace=True)
+        
+        # Optimize VAE similar to other models
+        self.pipe.vae.enable_slicing()
+        self.pipe.vae.enable_tiling()
+        self.pipe.vae = self.pipe.vae.to(device=self.device, dtype=self.dtype)
+        self.pipe.vae = ipex.optimize(self.pipe.vae, dtype=self.dtype, inplace=True)
+
+        # Optimize text encoder
+        self.pipe.text_encoder = self.pipe.text_encoder.to(device=self.device, dtype=self.dtype)
+        self.pipe.text_encoder = optimize_transformer(self.pipe.text_encoder)
+
+        # Set scheduler
+        self.pipe.scheduler = EulerDiscreteScheduler.from_config(
+            self.pipe.scheduler.config,
+            timestep_spacing="trailing",
+            beta_schedule="linear"
+        )
+
+        # Perform warmup
+        self._warmup()
+
+        logger.info(
+            f"Initialized {self.model_id} with device={self.device}, dtype={self.dtype}"
+        )
+
+    def _warmup(self):
+        """Perform warmup inference"""
+        logger.info("Starting warmup...")
+        with torch.inference_mode(), torch.xpu.amp.autocast():
+            _ = self.pipe(
+                prompt="test",
+                num_frames=8,
+                guidance_scale=1.0,
+                num_inference_steps=4,
+            )
+        if torch.xpu.is_available():
+            torch.xpu.synchronize()
+        logger.info("Warmup completed")
+
+    def generate(self, prompt: str, **kwargs) -> str:
+        start_time = time.time()
+        video_frames = perform_inference(
+            self.pipe,
+            prompt,
+            device=self.device,
+            **kwargs
+        )
+
+        output_path = kwargs.get("output_path", "output.gif")
+        fps = kwargs.get("fps", 8)
+        export_to_gif(video_frames, output_path, fps=fps)
+
+        inference_time = time.time() - start_time
+        logger.info(f"Inference time: {inference_time:.2f} seconds")
+        logger.info(f"Animation saved as: {output_path}")
+
+        return output_path
+
+    def get_model_info(self) -> Dict[str, Any]:
+        return {
+            "model_id": self.model_id,
+            "base_model": self.base_model,
+            "model_type": "AnimateDiff",
+            "device": self.device,
+            "dtype": str(self.dtype),
+        }
+
+
 class VideoModelFactory:
     @staticmethod
     def create_model(model_type: str, **kwargs) -> BaseVideoModel:
         models = {
-            "cogvideox": CogVideoXModel,
-            "cogvideo5b": CogVideoX5BModel,
+            "cogvideoX2b": CogVideoXModel,
+            "cogvideoX5b": CogVideoX5BModel,
+            "animatediff": AnimateDiffModel,
         }
         if model_type not in models:
             raise ValueError(f"Unknown model type: {model_type}")
