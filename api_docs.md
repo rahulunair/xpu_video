@@ -54,7 +54,7 @@ Retrieve information about the loaded model and system.
     "default_steps": 50,
     "default_guidance": 6.0,
     "min_frames": 8,
-    "max_frames": 100,
+    "max_frames": 24,
     "default_fps": 24
   },
   "system_info": {
@@ -95,7 +95,7 @@ Generate a video based on the given parameters.
 ```json
 {
   "prompt": "A serene sunset over the ocean with birds flying in the sky.",
-  "num_frames": 49,
+  "num_frames": 24,
   "fps": 24,
   "guidance_scale": 7.5,
   "num_inference_steps": 50
@@ -107,17 +107,17 @@ Generate a video based on the given parameters.
 
 #### `curl` Example
 ```bash
-curl -X POST \
+ curl -X POST \
   -H "Authorization: Bearer $VALID_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "prompt": "A serene sunset over the ocean with birds flying in the sky.",
-    "num_frames": 49,
+    "num_frames": 24,
     "fps": 24,
     "guidance_scale": 7.5,
     "num_inference_steps": 50
   }' \
-  http://localhost:9000/imagine/generate -o generated_video.mp4
+  http://localhost:9000/imagine/generate
 ```
 
 This command will save the generated video as `generated_video.mp4` locally.
