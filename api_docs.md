@@ -4,7 +4,7 @@ This document provides details for interacting with the Video Generation API, wh
 
 ## Base URL & Port Configuration
 
-**Local Development:**
+**Local Development (on the same host as the service is setup):**
 ```
 http://localhost:9000  # Default port
 ```
